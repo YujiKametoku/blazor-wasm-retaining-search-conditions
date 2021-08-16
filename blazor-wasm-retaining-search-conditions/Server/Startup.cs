@@ -6,6 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
+using blazorwasmretainingsearchconditions.Server.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace blazor_wasm_retaining_search_conditions.Server
 {
@@ -22,7 +24,7 @@ namespace blazor_wasm_retaining_search_conditions.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddDbContext<DataContext>(options => options.UseNpgsql(Configuration.GetConnectionString("Connection")));
             services.AddControllersWithViews();
             services.AddRazorPages();
         }

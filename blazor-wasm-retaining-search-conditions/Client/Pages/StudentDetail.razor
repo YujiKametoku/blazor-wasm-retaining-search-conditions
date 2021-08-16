@@ -1,0 +1,25 @@
+﻿@page "/studentdetail/{Id:long}"
+
+@if (student != null)
+{
+    <div>
+        <p>@student.Id</p>
+        <p>@student.FirstName</p>
+        <p>@student.LastName</p>
+        <p>@student.Age</p>
+        <p>@student.Gender</p>
+        <p>@student.Email</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private Student student;
+
+    protected override async Task OnInitializedAsync()
+    {
+        student = await Http.GetFromJsonAsync<Student>($"/api/student/{Id}");
+    }
+}

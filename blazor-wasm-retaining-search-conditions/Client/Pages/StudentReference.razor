@@ -1,0 +1,143 @@
+﻿@page "/studentreference"
+
+<h1>Student Reference</h1>
+
+<EditForm Model="condition">
+    <div>
+        <label>ID</label>
+        <InputNumber @bind-Value="condition.Id"></InputNumber>
+    </div>
+    <div>
+        <label>First name</label>
+        <InputText @bind-Value="condition.FirstName"></InputText>
+    </div>
+    <div>
+        <label>Last name</label>
+        <InputText @bind-Value="condition.LastName"></InputText>
+    </div>
+    <div>
+        <label>Age</label>
+        <InputNumber @bind-Value="condition.Age"></InputNumber>
+    </div>
+    <div>
+        <label>Gender</label>
+        @*InputSelectではどうやらNullableな型は使用できないようです。なので、selectタグを使用しています。*@
+        <select @bind="condition.Gender">
+            <option></option>
+            <option value="@Gender.MEN">MEN</option>
+            <option value="@Gender.WOMEN">WOMEN</option>
+        </select>
+    </div>
+    <div>
+        <label>Email</label>
+        <InputText @bind-Value="condition.Email"></InputText>
+    </div>
+    <div>
+        <button @onclick="Navigate">Search</button>
+    </div>
+</EditForm>
+
+@if (students == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First name</th>
+                <th>Last name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Email</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in students)
+            {
+                <tr>
+                    <td>@student.Id</td>
+                    <td>@student.FirstName</td>
+                    <td>@student.LastName</td>
+                    <td>@student.Age</td>
+                    <td>@student.Gender</td>
+                    <td>@student.Email</td>
+                    <td>
+                        <button @onclick="@(() => navigationManager.NavigateTo($"/studentdetail/{student.Id}"))">DETAIL</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    public bool Init { get; set; } = true;
+
+    private Student[] students;
+
+    private StudentSearchCondition condition = new StudentSearchCondition();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 画面初回表示時にクエリーパラメーターがある場合は、検索条件にセットする
+        GetQueryString();
+
+        await Search();
+
+        navigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs args)
+    {
+        GetQueryString();
+
+        InvokeAsync(async() =>
+        {
+            await Search();
+        });
+    }
+
+    private void Navigate()
+    {
+        Dictionary<string, string> queryParams = CreateQueryParam();
+
+        navigationManager.NavigateTo(QueryHelpers.AddQueryString("studentreference", queryParams));
+    }
+
+    private async Task Search()
+    {
+        Dictionary<string, string> queryParams = CreateQueryParam();
+
+        students = await Http.GetFromJsonAsync<Student[]>(QueryHelpers.AddQueryString("api/student", queryParams));
+
+        StateHasChanged();
+    }
+
+    private void GetQueryString()
+    {
+        var uriQuery = HttpUtility.ParseQueryString(new Uri(navigationManager.Uri).Query);
+        condition.Id = string.IsNullOrWhiteSpace(uriQuery.Get("id")) ? null : (long?)Int64.Parse(uriQuery.Get("id"));
+        condition.FirstName = uriQuery.Get("firstName");
+        condition.LastName = uriQuery.Get("lastName");
+        condition.Age = string.IsNullOrWhiteSpace(uriQuery.Get("age")) ? null : (int?)Int32.Parse(uriQuery.Get("age"));
+        condition.Gender = string.IsNullOrWhiteSpace(uriQuery.Get("gender")) ? null : (Gender?)Enum.Parse(typeof(Gender), uriQuery.Get("gender"));
+        condition.Email = uriQuery.Get("email");
+    }
+
+    private Dictionary<string, string> CreateQueryParam()
+    {
+        var queryParams = new Dictionary<string, string>();
+        if (condition.Id != null) { queryParams.Add("id", condition.Id.ToString()); }
+        if (!string.IsNullOrWhiteSpace(condition.FirstName)) { queryParams.Add("firstName", condition.FirstName); }
+        if (!string.IsNullOrWhiteSpace(condition.LastName)) { queryParams.Add("lastName", condition.LastName); }
+        if (condition.Age != null) { queryParams.Add("age", condition.Age.ToString()); }
+        if (condition.Gender != null) { queryParams.Add("gender", $"{condition.Gender}"); }
+        if (!string.IsNullOrWhiteSpace(condition.Email)) { queryParams.Add("email", condition.Email); }
+
+        return queryParams;
+    }
+}                                                                                                                                                   
